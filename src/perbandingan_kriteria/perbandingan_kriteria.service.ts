@@ -1,0 +1,139 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreatePerbandinganDto } from './dto/create_perbandingan_dto';
+import { Decimal } from '@prisma/client/runtime/library';
+
+@Injectable()
+export class PerbandinganKriteriaService {
+  constructor(private prisma: PrismaService) {}
+
+  async createPerbandingan(dto: CreatePerbandinganDto) {
+    const { perbandingan } = dto;
+
+    const uniqueKriteriaIds = Array.from(
+      new Set([
+        ...perbandingan.map((item) => item.kriteria1_id),
+        ...perbandingan.map((item) => item.kriteria2_id),
+      ]),
+    );
+
+    uniqueKriteriaIds.forEach((kriteriaId) => {
+      perbandingan.push({
+        kriteria1_id: kriteriaId,
+        kriteria2_id: kriteriaId,
+        nilai_perbandingan: 1,
+      });
+    });
+
+    await Promise.all(
+      perbandingan.map(
+        async ({ kriteria1_id, kriteria2_id, nilai_perbandingan }) => {
+          await this.prisma.perbandingan_kriteria.upsert({
+            where: {
+              kriteria1_id_kriteria2_id: { kriteria1_id, kriteria2_id },
+            },
+            update: { nilai_perbandingan },
+            create: { kriteria1_id, kriteria2_id, nilai_perbandingan },
+          });
+
+          await this.prisma.perbandingan_kriteria.upsert({
+            where: {
+              kriteria1_id_kriteria2_id: {
+                kriteria1_id: kriteria2_id,
+                kriteria2_id: kriteria1_id,
+              },
+            },
+            update: { nilai_perbandingan: 1 / nilai_perbandingan },
+            create: {
+              kriteria1_id: kriteria2_id,
+              kriteria2_id: kriteria1_id,
+              nilai_perbandingan: 1 / nilai_perbandingan,
+            },
+          });
+        },
+      ),
+    );
+  }
+
+  async calculateAHP() {
+    const kriteria = await this.prisma.kriteria.findMany();
+    const jumlahKriteria = kriteria.length;
+
+    const perbandingan = await this.prisma.perbandingan_kriteria.findMany();
+
+    const matriks: number[][] = Array.from({ length: jumlahKriteria }, (_, i) =>
+      Array.from({ length: jumlahKriteria }, (_, j) => (i === j ? 1 : 0)),
+    );
+
+    perbandingan.forEach((p) => {
+      const i = kriteria.findIndex((k) => k.kriteria_id === p.kriteria1_id);
+      const j = kriteria.findIndex((k) => k.kriteria_id === p.kriteria2_id);
+
+      const nilaiPerbandingan = (p.nilai_perbandingan as Decimal).toNumber();
+
+      matriks[i][j] = nilaiPerbandingan;
+      matriks[j][i] = 1 / nilaiPerbandingan; // Perbandingan terbalik
+    });
+
+    const totalKolom = matriks[0].map((_, colIndex) =>
+      matriks.reduce((sum, row) => sum + row[colIndex], 0),
+    );
+
+    const matriksNormalisasi = matriks.map((row) =>
+      row.map((value, colIndex) =>
+        totalKolom[colIndex] === 0 ? 0 : value / totalKolom[colIndex],
+      ),
+    );
+
+    // prioritas
+    const prioritas = matriksNormalisasi.map(
+      (row) => row.reduce((sum, value) => sum + value, 0) / jumlahKriteria,
+    );
+
+    if (prioritas.some((p) => isNaN(p) || p === null)) {
+      return {
+        message: 'Data perbandingan tidak konsisten atau tidak lengkap.',
+        matriks,
+        matriksNormalisasi,
+        prioritas,
+      };
+    }
+
+    // eigen
+    const eigenValues = totalKolom.map((total, i) => prioritas[i] * total);
+    const eigenMax = eigenValues.reduce((sum, value) => sum + value, 0);
+
+    // CI, RI, dan CR
+    const CI = (eigenMax - jumlahKriteria) / (jumlahKriteria - 1);
+    const RI = getRI(jumlahKriteria);
+    const CR = RI === 0 ? null : CI / RI;
+
+    return {
+      matriks,
+      matriksNormalisasi,
+      prioritas,
+      eigenMax,
+      CI,
+      RI,
+      CR,
+      konsisten: CR !== null && CR < 0.1, // jika < 0.1 maka konsisten
+    };
+  }
+}
+
+// nilai RI
+function getRI(jumlahKriteria: number): number {
+  const riTable: Record<number, number> = {
+    1: 0.0,
+    2: 0.0,
+    3: 0.58,
+    4: 0.9,
+    5: 1.12,
+    6: 1.24,
+    7: 1.32,
+    8: 1.41,
+    9: 1.45,
+    10: 1.49,
+  };
+  return riTable[jumlahKriteria] || 0;
+}

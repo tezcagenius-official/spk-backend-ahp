@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  user_id  Int        @id @default(autoincrement())
+  username String     @unique(map: "username") @db.VarChar(25)
+  password String     @db.VarChar(100)
+  role     users_role
+}
+
+model hasil_perhitungan {
+  id            Int         @id @default(autoincrement())
+  alternatif_id Int?
+  total_skor    Decimal?    @db.Decimal(10, 4)
+  ranking       Int?
+  alternatif    alternatif? @relation(fields: [alternatif_id], references: [alternatif_id], onDelete: NoAction, onUpdate: NoAction, map: "hasil_perhitungan_ibfk_1")
+
+  @@index([alternatif_id], map: "alternatif_id")
+}
+
+model alternatif {
+  alternatif_id        Int                    @id @default(autoincrement())
+  nama                 String                 @db.VarChar(100)
+  email                String?                @db.VarChar(100)
+  nomor_telpon         String?                @db.VarChar(20)
+  hasil_perhitungan    hasil_perhitungan[]
+  penilaian_alternatif penilaian_alternatif[]
+}
+
+model kriteria {
+  kriteria_id                                                        Int                         @id @default(autoincrement())
+  nama_kriteria                                                      String                      @db.VarChar(100)
+  perbandingan_kriteria_perbandingan_kriteria_kriteria1_idTokriteria perbandingan_kriteria[]     @relation("perbandingan_kriteria_kriteria1_idTokriteria")
+  perbandingan_kriteria_perbandingan_kriteria_kriteria2_idTokriteria perbandingan_kriteria[]     @relation("perbandingan_kriteria_kriteria2_idTokriteria")
+  perbandingan_sub_kriteria                                          perbandingan_sub_kriteria[]
+  sub_kriteria                                                       sub_kriteria[]
+}
+
+model penilaian_alternatif {
+  id                 Int           @id @default(autoincrement())
+  alternatif_id      Int?
+  sub_kriteria_id    Int?
+  nilai_sub_kriteria String?       @db.VarChar(50)
+  alternatif         alternatif?   @relation(fields: [alternatif_id], references: [alternatif_id], onDelete: NoAction, onUpdate: NoAction, map: "penilaian_alternatif_ibfk_1")
+  sub_kriteria       sub_kriteria? @relation(fields: [sub_kriteria_id], references: [sub_kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "penilaian_alternatif_ibfk_2")
+
+  @@index([alternatif_id], map: "alternatif_id")
+  @@index([sub_kriteria_id], map: "sub_kriteria_id")
+}
+
+model perbandingan_kriteria {
+  id                                                    Int       @id @default(autoincrement())
+  kriteria1_id                                          Int?
+  kriteria2_id                                          Int?
+  nilai_perbandingan                                    Decimal?  @db.Decimal(10, 4)
+  kriteria_perbandingan_kriteria_kriteria1_idTokriteria kriteria? @relation("perbandingan_kriteria_kriteria1_idTokriteria", fields: [kriteria1_id], references: [kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "perbandingan_kriteria_ibfk_1")
+  kriteria_perbandingan_kriteria_kriteria2_idTokriteria kriteria? @relation("perbandingan_kriteria_kriteria2_idTokriteria", fields: [kriteria2_id], references: [kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "perbandingan_kriteria_ibfk_2")
+
+  @@unique([kriteria1_id, kriteria2_id])
+  @@index([kriteria1_id], map: "kriteria1_id")
+  @@index([kriteria2_id], map: "kriteria2_id")
+}
+
+model perbandingan_sub_kriteria {
+  id                                                                    Int           @id @default(autoincrement())
+  kriteria_id                                                           Int?
+  sub_kriteria1_id                                                      Int?
+  sub_kriteria2_id                                                      Int?
+  nilai_perbandingan                                                    Decimal?      @db.Decimal(10, 4)
+  kriteria                                                              kriteria?     @relation(fields: [kriteria_id], references: [kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "perbandingan_sub_kriteria_ibfk_1")
+  sub_kriteria_perbandingan_sub_kriteria_sub_kriteria1_idTosub_kriteria sub_kriteria? @relation("perbandingan_sub_kriteria_sub_kriteria1_idTosub_kriteria", fields: [sub_kriteria1_id], references: [sub_kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "perbandingan_sub_kriteria_ibfk_2")
+  sub_kriteria_perbandingan_sub_kriteria_sub_kriteria2_idTosub_kriteria sub_kriteria? @relation("perbandingan_sub_kriteria_sub_kriteria2_idTosub_kriteria", fields: [sub_kriteria2_id], references: [sub_kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "perbandingan_sub_kriteria_ibfk_3")
+
+  @@index([kriteria_id], map: "kriteria_id")
+  @@index([sub_kriteria1_id], map: "sub_kriteria1_id")
+  @@index([sub_kriteria2_id], map: "sub_kriteria2_id")
+}
+
+model sub_kriteria {
+  sub_kriteria_id                                                                    Int                         @id @default(autoincrement())
+  kriteria_id                                                                        Int?
+  nama_sub_kriteria                                                                  String                      @db.VarChar(100)
+  penilaian_alternatif                                                               penilaian_alternatif[]
+  perbandingan_sub_kriteria_perbandingan_sub_kriteria_sub_kriteria1_idTosub_kriteria perbandingan_sub_kriteria[] @relation("perbandingan_sub_kriteria_sub_kriteria1_idTosub_kriteria")
+  perbandingan_sub_kriteria_perbandingan_sub_kriteria_sub_kriteria2_idTosub_kriteria perbandingan_sub_kriteria[] @relation("perbandingan_sub_kriteria_sub_kriteria2_idTosub_kriteria")
+  kriteria                                                                           kriteria?                   @relation(fields: [kriteria_id], references: [kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "sub_kriteria_ibfk_1")
+
+  @@index([kriteria_id], map: "kriteria_id")
+}
+
+enum users_role {
+  spa
+  adm
+}
