@@ -38,7 +38,7 @@ export class CriteriaController {
   ) {}
 
   @ApiStandartResponseCreate(createResponseDto)
-  @Post('/create')
+  @Post()
   async create(@Body() dto: createCriteriaDto, @Res() res: Response) {
     try {
       const create = await this.prisma.kriteria.create({
@@ -104,7 +104,7 @@ export class CriteriaController {
   }
 
   @ApiStandartResponseUpdated(updateResponseDto)
-  @Patch('/update/:id')
+  @Patch('/:id')
   async update(
     @Param('id') id: number,
     @Body() dto: createCriteriaDto,
@@ -134,8 +134,8 @@ export class CriteriaController {
   }
 
   @ApiStandartResponseDeleted(deleteResponseDto)
-  @Delete('/delete')
-  async delete(@Query('id') id: number, @Res() res: Response) {
+  @Delete('/:id')
+  async delete(@Param('id') id: number, @Res() res: Response) {
     try {
       const deleteKriteria = await this.prisma.kriteria.delete({
         where: {

@@ -38,7 +38,7 @@ export class SubKriteriaController {
     private readonly prisma: PrismaService,
   ) {}
   @ApiStandartResponseCreate(createResponseDto)
-  @Post('/create')
+  @Post()
   async create(@Body() dto: createSubKriteriaDto, @Res() res: Response) {
     try {
       const create = await this.prisma.sub_kriteria.create({
@@ -105,7 +105,7 @@ export class SubKriteriaController {
   }
 
   @ApiStandartResponseUpdated(updateResponseDto)
-  @Patch('/update/:id')
+  @Patch('/:id')
   async update(
     @Param('id') id: number,
     @Body() dto: updateSubKriteriaDto,
@@ -135,8 +135,8 @@ export class SubKriteriaController {
   }
 
   @ApiStandartResponseDeleted(deleteResponseDto)
-  @Delete('/delete')
-  async delete(@Query('id') id: number, @Res() res: Response) {
+  @Delete('/:id')
+  async delete(@Param('id') id: number, @Res() res: Response) {
     try {
       const deleteSubKriteria = await this.prisma.sub_kriteria.delete({
         where: {

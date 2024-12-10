@@ -17,7 +17,7 @@ model users {
 model hasil_perhitungan {
   id            Int         @id @default(autoincrement())
   alternatif_id Int?
-  total_skor    Decimal?    @db.Decimal(10, 4)
+  total_skor    Decimal?    @default(0) @db.Decimal(10, 4)
   ranking       Int?
   alternatif    alternatif? @relation(fields: [alternatif_id], references: [alternatif_id], onDelete: NoAction, onUpdate: NoAction, map: "hasil_perhitungan_ibfk_1")
 
@@ -36,6 +36,8 @@ model alternatif {
 model kriteria {
   kriteria_id                                                        Int                         @id @default(autoincrement())
   nama_kriteria                                                      String                      @db.VarChar(100)
+  prioritas                                                          Decimal?                    @db.Decimal(10, 4)
+  penilaian_alternatif                                               penilaian_alternatif[]
   perbandingan_kriteria_perbandingan_kriteria_kriteria1_idTokriteria perbandingan_kriteria[]     @relation("perbandingan_kriteria_kriteria1_idTokriteria")
   perbandingan_kriteria_perbandingan_kriteria_kriteria2_idTokriteria perbandingan_kriteria[]     @relation("perbandingan_kriteria_kriteria2_idTokriteria")
   perbandingan_sub_kriteria                                          perbandingan_sub_kriteria[]
@@ -46,12 +48,15 @@ model penilaian_alternatif {
   id                 Int           @id @default(autoincrement())
   alternatif_id      Int?
   sub_kriteria_id    Int?
-  nilai_sub_kriteria String?       @db.VarChar(50)
+  nilai_sub_kriteria Decimal?      @db.Decimal(10, 4)
+  kriteria_id        Int?
+  kriteria           kriteria?     @relation(fields: [kriteria_id], references: [kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_penilaian_alternatif_kriteria")
   alternatif         alternatif?   @relation(fields: [alternatif_id], references: [alternatif_id], onDelete: NoAction, onUpdate: NoAction, map: "penilaian_alternatif_ibfk_1")
   sub_kriteria       sub_kriteria? @relation(fields: [sub_kriteria_id], references: [sub_kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "penilaian_alternatif_ibfk_2")
 
   @@index([alternatif_id], map: "alternatif_id")
   @@index([sub_kriteria_id], map: "sub_kriteria_id")
+  @@index([kriteria_id], map: "fk_penilaian_alternatif_kriteria")
 }
 
 model perbandingan_kriteria {
@@ -77,7 +82,7 @@ model perbandingan_sub_kriteria {
   sub_kriteria_perbandingan_sub_kriteria_sub_kriteria1_idTosub_kriteria sub_kriteria? @relation("perbandingan_sub_kriteria_sub_kriteria1_idTosub_kriteria", fields: [sub_kriteria1_id], references: [sub_kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "perbandingan_sub_kriteria_ibfk_2")
   sub_kriteria_perbandingan_sub_kriteria_sub_kriteria2_idTosub_kriteria sub_kriteria? @relation("perbandingan_sub_kriteria_sub_kriteria2_idTosub_kriteria", fields: [sub_kriteria2_id], references: [sub_kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "perbandingan_sub_kriteria_ibfk_3")
 
-  @@index([kriteria_id], map: "kriteria_id")
+  @@unique([kriteria_id, sub_kriteria1_id, sub_kriteria2_id], name: "kriteria1_kriteria2")
   @@index([sub_kriteria1_id], map: "sub_kriteria1_id")
   @@index([sub_kriteria2_id], map: "sub_kriteria2_id")
 }
@@ -86,6 +91,7 @@ model sub_kriteria {
   sub_kriteria_id                                                                    Int                         @id @default(autoincrement())
   kriteria_id                                                                        Int?
   nama_sub_kriteria                                                                  String                      @db.VarChar(100)
+  prioritas                                                                          Decimal?                    @db.Decimal(10, 4)
   penilaian_alternatif                                                               penilaian_alternatif[]
   perbandingan_sub_kriteria_perbandingan_sub_kriteria_sub_kriteria1_idTosub_kriteria perbandingan_sub_kriteria[] @relation("perbandingan_sub_kriteria_sub_kriteria1_idTosub_kriteria")
   perbandingan_sub_kriteria_perbandingan_sub_kriteria_sub_kriteria2_idTosub_kriteria perbandingan_sub_kriteria[] @relation("perbandingan_sub_kriteria_sub_kriteria2_idTosub_kriteria")

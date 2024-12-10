@@ -108,6 +108,16 @@ export class PerbandinganKriteriaService {
     const RI = getRI(jumlahKriteria);
     const CR = RI === 0 ? null : CI / RI;
 
+    // Update atau simpan nilai prioritas ke tabel `kriteria`
+    await Promise.all(
+      kriteria.map((k, index) =>
+        this.prisma.kriteria.update({
+          where: { kriteria_id: k.kriteria_id },
+          data: { prioritas: prioritas[index] },
+        }),
+      ),
+    );
+
     return {
       matriks,
       matriksNormalisasi,

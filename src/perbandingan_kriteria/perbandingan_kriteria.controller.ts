@@ -18,7 +18,7 @@ export class PerbandinganKriteriaController {
   ) {}
 
   @ApiStandartResponseCreate(createResponseDto)
-  @Post('perbandingan')
+  @Post('/perbandingan')
   async createPerbandingan(
     @Body() dto: CreatePerbandinganDto,
     @Res() res: Response,
@@ -41,7 +41,7 @@ export class PerbandinganKriteriaController {
   }
 
   @ApiStandartResponse(CalculateAHPResponseDto)
-  @Get('calculate')
+  @Get('/calculate')
   async calculateAHP(@Res() res: Response) {
     try {
       const result = await this.perbandinganKriteriaService.calculateAHP();
