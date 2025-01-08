@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
-import { Request, Response } from 'express';
+// import { Request, Response } from 'express';
 
 async function bootstrap() {
   dotenv.config();
@@ -29,9 +29,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
 
-  app.use('/', (req: Request, res: Response) => {
-    res.redirect('/api-docs');
-  });
+  // app.use('/', (req: Request, res: Response) => {
+  //   res.redirect('api-docs');
+  // });
 
   await app.listen(4040);
 
