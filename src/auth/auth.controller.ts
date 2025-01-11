@@ -63,7 +63,7 @@ export class AuthController {
       res.status(HttpStatus.OK).json({
         status: 200,
         message: 'ok',
-        data: { token },
+        data: { token, users },
       });
     } catch (error) {
       console.log(error);
