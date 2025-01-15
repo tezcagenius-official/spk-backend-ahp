@@ -33,6 +33,7 @@ import { ApiBearerAuth } from 'src/common/decorator/bearer_auth';
 import { ERole } from 'src/common/enum/ERole';
 import { paginationDekoratorDto } from 'src/common/interface/paginationDekorator';
 import { createPagination } from 'src/common/interface/pagination.util';
+import { env } from 'process';
 
 @ApiTags('Sub Kriteria')
 @Controller('/api/sub-kriteria')
@@ -91,11 +92,11 @@ export class SubKriteriaController {
           ...meta,
           prev:
             page > 1
-              ? `/api/sub-kriteria?page=${page - 1}&perPage=${perPage}`
+              ? `${env.BASE_URL}/api/sub-kriteria?page=${page - 1}&perPage=${perPage}`
               : null,
           next:
             page < meta.lastPage
-              ? `/api/sub-kriteria?page=${page + 1}&perPage=${perPage}`
+              ? `${env.BASE_URL}/api/sub-kriteria?page=${page + 1}&perPage=${perPage}`
               : null,
         },
       });

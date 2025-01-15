@@ -54,6 +54,7 @@ model penilaian_alternatif {
   alternatif         alternatif?   @relation(fields: [alternatif_id], references: [alternatif_id], onDelete: NoAction, onUpdate: NoAction, map: "penilaian_alternatif_ibfk_1")
   sub_kriteria       sub_kriteria? @relation(fields: [sub_kriteria_id], references: [sub_kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "penilaian_alternatif_ibfk_2")
 
+  @@unique([alternatif_id, kriteria_id])
   @@index([alternatif_id], map: "alternatif_id")
   @@index([sub_kriteria_id], map: "sub_kriteria_id")
   @@index([kriteria_id], map: "fk_penilaian_alternatif_kriteria")

@@ -25,6 +25,7 @@ import { ApiBearerAuth } from 'src/common/decorator/bearer_auth';
 import { ERole } from 'src/common/enum/ERole';
 import { createPagination } from 'src/common/interface/pagination.util';
 import { paginationDekoratorDto } from 'src/common/interface/paginationDekorator';
+import { env } from 'process';
 
 @ApiTags('Alternatif')
 @Controller('/api/alternatif')
@@ -74,11 +75,11 @@ export class AlternatifController {
           ...meta,
           prev:
             page > 1
-              ? `/api/alternatif?page=${page - 1}&perPage=${perPage}`
+              ? `${env.BASE_URL}/api/alternatif?page=${page - 1}&perPage=${perPage}`
               : null,
           next:
             page < meta.lastPage
-              ? `/api/alternatif?page=${page + 1}&perPage=${perPage}`
+              ? `${env.BASE_URL}/api/alternatif?page=${page + 1}&perPage=${perPage}`
               : null,
         },
       });

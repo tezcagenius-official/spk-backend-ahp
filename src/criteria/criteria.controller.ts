@@ -32,6 +32,7 @@ import { ApiBearerAuth } from 'src/common/decorator/bearer_auth';
 import { ERole } from 'src/common/enum/ERole';
 import { paginationDekoratorDto } from 'src/common/interface/paginationDekorator';
 import { createPagination } from 'src/common/interface/pagination.util';
+import { env } from 'process';
 
 @ApiTags('Kriteria')
 @Controller('/api/criteria')
@@ -89,11 +90,11 @@ export class CriteriaController {
           ...meta,
           prev:
             page > 1
-              ? `/api/criteria?page=${page - 1}&perPage=${perPage}`
+              ? `${env.BASE_URL}/api/criteria?page=${page - 1}&perPage=${perPage}`
               : null,
           next:
             page < meta.lastPage
-              ? `/api/criteria?page=${page + 1}&perPage=${perPage}`
+              ? `${env.BASE_URL}/api/criteria?page=${page + 1}&perPage=${perPage}`
               : null,
         },
       });
