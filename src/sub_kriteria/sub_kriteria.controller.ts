@@ -29,6 +29,10 @@ import {
 import { createSubKriteriaDto } from './dto/create_sub_kriteria';
 import { getResponseSubCriteriaDto } from './dto/get_response_sub_kriteria';
 import { updateSubKriteriaDto } from './dto/update_sub_kriteria';
+import { ApiBearerAuth } from 'src/common/decorator/bearer_auth';
+import { ERole } from 'src/common/enum/ERole';
+import { paginationDekoratorDto } from 'src/common/interface/paginationDekorator';
+import { createPagination } from 'src/common/interface/pagination.util';
 
 @ApiTags('Sub Kriteria')
 @Controller('/api/sub-kriteria')
@@ -37,6 +41,8 @@ export class SubKriteriaController {
     private readonly subKriteriaService: SubKriteriaService,
     private readonly prisma: PrismaService,
   ) {}
+
+  @ApiBearerAuth([ERole.SPA])
   @ApiStandartResponseCreate(createResponseDto)
   @Post()
   async create(@Body() dto: createSubKriteriaDto, @Res() res: Response) {
@@ -48,28 +54,50 @@ export class SubKriteriaController {
         },
       });
 
-      res.status(HttpStatus.CREATED).json({
+      return res.status(HttpStatus.CREATED).json({
         status: 201,
         message: 'Berhasil Menambahkan Sub Kriteria',
       });
     } catch (error) {
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: 500,
         message: 'Internal Server Error',
       });
     }
   }
 
+  @ApiBearerAuth([ERole.ADM, ERole.SPA])
   @ApiStandartResponseArray(getResponseSubCriteriaDto)
   @Get()
-  async findAll(@Res() res: Response) {
+  async findAll(@Query() filter: paginationDekoratorDto, @Res() res: Response) {
     try {
-      const subKriteria = await this.prisma.sub_kriteria.findMany();
+      const totalCount = await this.prisma.sub_kriteria.count();
+
+      const { page, perPage, skip, meta } = createPagination(
+        filter,
+        totalCount,
+      );
+
+      const subKriteria = await this.prisma.sub_kriteria.findMany({
+        skip,
+        take: perPage,
+      });
 
       return res.status(HttpStatus.OK).json({
-        status: 200,
+        status: HttpStatus.OK,
         message: 'Sub Kriteria Berhasil Diambil',
         data: subKriteria,
+        meta: {
+          ...meta,
+          prev:
+            page > 1
+              ? `/api/sub-kriteria?page=${page - 1}&perPage=${perPage}`
+              : null,
+          next:
+            page < meta.lastPage
+              ? `/api/sub-kriteria?page=${page + 1}&perPage=${perPage}`
+              : null,
+        },
       });
     } catch (error) {
       console.log(error);
@@ -80,6 +108,7 @@ export class SubKriteriaController {
     }
   }
 
+  @ApiBearerAuth([ERole.ADM, ERole.SPA])
   @ApiStandartResponse(getResponseSubCriteriaDto)
   @Get('/:id')
   async findOne(@Param('id') id: number, @Res() res: Response) {
@@ -104,6 +133,7 @@ export class SubKriteriaController {
     }
   }
 
+  @ApiBearerAuth([ERole.SPA])
   @ApiStandartResponseUpdated(updateResponseDto)
   @Patch('/:id')
   async update(
@@ -121,19 +151,20 @@ export class SubKriteriaController {
         },
       });
 
-      res.status(HttpStatus.CREATED).json({
+      return res.status(HttpStatus.CREATED).json({
         status: 200,
         message: 'Berhasil Merubah Sub Kriteria',
       });
     } catch (error) {
       console.log(error);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: 500,
         message: 'Internal Server Error',
       });
     }
   }
 
+  @ApiBearerAuth([ERole.SPA])
   @ApiStandartResponseDeleted(deleteResponseDto)
   @Delete('/:id')
   async delete(@Param('id') id: number, @Res() res: Response) {
@@ -151,7 +182,7 @@ export class SubKriteriaController {
       });
     } catch (error) {
       console.log(error);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: 500,
         message: 'Internal Server Error',
       });

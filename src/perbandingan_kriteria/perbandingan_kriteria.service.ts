@@ -7,6 +7,23 @@ import { Decimal } from '@prisma/client/runtime/library';
 export class PerbandinganKriteriaService {
   constructor(private prisma: PrismaService) {}
 
+  async getPerbandinganKriteria() {
+    const kriteria = await this.prisma.kriteria.findMany();
+
+    const combinations = [];
+    for (let i = 0; i < kriteria.length; i++) {
+      for (let j = i + 1; j < kriteria.length; j++) {
+        combinations.push({
+          kriteria1_id: kriteria[i].kriteria_id,
+          kriteria2_id: kriteria[j].kriteria_id,
+          nilai_perbandingan: 1,
+        });
+      }
+    }
+
+    return { perbandingan: combinations };
+  }
+
   async createPerbandingan(dto: CreatePerbandinganDto) {
     const { perbandingan } = dto;
 

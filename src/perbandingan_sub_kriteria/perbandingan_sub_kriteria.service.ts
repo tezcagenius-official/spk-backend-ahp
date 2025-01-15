@@ -11,6 +11,35 @@ import { Decimal } from '@prisma/client/runtime/library';
 export class PerbandinganSubKriteriaService {
   constructor(private prisma: PrismaService) {}
 
+  async getSubKriteriaCombinationsDefault(kriteria_id: number) {
+    const subKriteria = await this.prisma.sub_kriteria.findMany({
+      where: { kriteria_id },
+      select: { sub_kriteria_id: true },
+    });
+
+    if (subKriteria.length < 2) {
+      throw new BadRequestException(
+        `Tidak cukup sub-kriteria untuk membuat kombinasi pada kriteria ID ${kriteria_id}.`,
+      );
+    }
+
+    const combinations = [];
+    for (let i = 0; i < subKriteria.length; i++) {
+      for (let j = i + 1; j < subKriteria.length; j++) {
+        combinations.push({
+          sub_kriteria1_id: subKriteria[i].sub_kriteria_id,
+          sub_kriteria2_id: subKriteria[j].sub_kriteria_id,
+          nilai_perbandingan: 1,
+        });
+      }
+    }
+
+    return {
+      kriteria_id,
+      perbandingan: combinations,
+    };
+  }
+
   async createPerbandinganSubKriteria(data: CreateSubKriteriaPerbandinganDto) {
     const { kriteria_id, perbandingan } = data;
 

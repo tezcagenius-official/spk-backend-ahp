@@ -28,6 +28,10 @@ import {
   deleteResponseDto,
   updateResponseDto,
 } from 'src/auth/dto/response-crud.dto';
+import { ApiBearerAuth } from 'src/common/decorator/bearer_auth';
+import { ERole } from 'src/common/enum/ERole';
+import { paginationDekoratorDto } from 'src/common/interface/paginationDekorator';
+import { createPagination } from 'src/common/interface/pagination.util';
 
 @ApiTags('Kriteria')
 @Controller('/api/criteria')
@@ -37,6 +41,7 @@ export class CriteriaController {
     private readonly prisma: PrismaService,
   ) {}
 
+  @ApiBearerAuth([ERole.SPA])
   @ApiStandartResponseCreate(createResponseDto)
   @Post()
   async create(@Body() dto: createCriteriaDto, @Res() res: Response) {
@@ -47,28 +52,50 @@ export class CriteriaController {
         },
       });
 
-      res.status(HttpStatus.CREATED).json({
+      return res.status(HttpStatus.CREATED).json({
         status: 201,
         message: 'Berhasil Menambahkan Kriteria',
       });
     } catch (error) {
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: 500,
         message: 'Internal Server Error',
       });
     }
   }
 
+  @ApiBearerAuth([ERole.ADM, ERole.SPA])
   @ApiStandartResponseArray(getResponseCriteriaDto)
   @Get()
-  async findAll(@Res() res: Response) {
+  async findAll(@Query() filter: paginationDekoratorDto, @Res() res: Response) {
     try {
-      const kriteria = await this.prisma.kriteria.findMany();
+      const totalCount = await this.prisma.kriteria.count();
+
+      const { page, perPage, skip, meta } = createPagination(
+        filter,
+        totalCount,
+      );
+
+      const kriteria = await this.prisma.kriteria.findMany({
+        skip,
+        take: perPage,
+      });
 
       return res.status(HttpStatus.OK).json({
-        status: 200,
+        status: HttpStatus.OK,
         message: 'Kriteria Berhasil Diambil',
         data: kriteria,
+        meta: {
+          ...meta,
+          prev:
+            page > 1
+              ? `/api/criteria?page=${page - 1}&perPage=${perPage}`
+              : null,
+          next:
+            page < meta.lastPage
+              ? `/api/criteria?page=${page + 1}&perPage=${perPage}`
+              : null,
+        },
       });
     } catch (error) {
       console.log(error);
@@ -79,6 +106,7 @@ export class CriteriaController {
     }
   }
 
+  @ApiBearerAuth([ERole.ADM, ERole.SPA])
   @ApiStandartResponse(getResponseCriteriaDto)
   @Get('/:id')
   async findOne(@Param('id') id: number, @Res() res: Response) {
@@ -103,6 +131,7 @@ export class CriteriaController {
     }
   }
 
+  @ApiBearerAuth([ERole.SPA])
   @ApiStandartResponseUpdated(updateResponseDto)
   @Patch('/:id')
   async update(
@@ -120,19 +149,20 @@ export class CriteriaController {
         },
       });
 
-      res.status(HttpStatus.CREATED).json({
+      return res.status(HttpStatus.CREATED).json({
         status: 201,
         message: 'Berhasil Merubah Kriteria',
       });
     } catch (error) {
       console.log(error);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: 500,
         message: 'Internal Server Error',
       });
     }
   }
 
+  @ApiBearerAuth([ERole.SPA])
   @ApiStandartResponseDeleted(deleteResponseDto)
   @Delete('/:id')
   async delete(@Param('id') id: number, @Res() res: Response) {
@@ -150,7 +180,7 @@ export class CriteriaController {
       });
     } catch (error) {
       console.log(error);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: 500,
         message: 'Internal Server Error',
       });

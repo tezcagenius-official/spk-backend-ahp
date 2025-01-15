@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Res,
 } from '@nestjs/common';
 import { AlternatifService } from './alternatif.service';
@@ -20,12 +21,17 @@ import {
 } from 'src/schema_standart/flexibelSchema';
 import { ResponseAlternatifDTO } from './dto/response_alternatif.dto';
 import { deleteResponseDto } from 'src/auth/dto/response-crud.dto';
+import { ApiBearerAuth } from 'src/common/decorator/bearer_auth';
+import { ERole } from 'src/common/enum/ERole';
+import { createPagination } from 'src/common/interface/pagination.util';
+import { paginationDekoratorDto } from 'src/common/interface/paginationDekorator';
 
 @ApiTags('Alternatif')
 @Controller('/api/alternatif')
 export class AlternatifController {
   constructor(private readonly alternatifService: AlternatifService) {}
 
+  @ApiBearerAuth([ERole.ADM])
   @Post()
   async create(@Body() dto: CreateAlternatifDTO, @Res() res: Response) {
     try {
@@ -44,16 +50,37 @@ export class AlternatifController {
     }
   }
 
+  @ApiBearerAuth([ERole.ADM, ERole.SPA])
   @ApiStandartResponseArray(ResponseAlternatifDTO)
   @Get()
-  async findAll(@Res() res: Response) {
+  async findAll(@Query() filter: paginationDekoratorDto, @Res() res: Response) {
     try {
-      const result = await this.alternatifService.findAll();
+      const totalCount = await this.alternatifService.countAlternatif();
+      const { page, perPage, skip, meta } = createPagination(
+        filter,
+        totalCount,
+      );
+
+      const alternatif = await this.alternatifService.findAlternatif(
+        skip,
+        perPage,
+      );
 
       return res.status(HttpStatus.OK).json({
         status: HttpStatus.OK,
-        message: result.message,
-        data: result.alternatif,
+        message: alternatif.message,
+        data: alternatif.alternatif,
+        meta: {
+          ...meta,
+          prev:
+            page > 1
+              ? `/api/alternatif?page=${page - 1}&perPage=${perPage}`
+              : null,
+          next:
+            page < meta.lastPage
+              ? `/api/alternatif?page=${page + 1}&perPage=${perPage}`
+              : null,
+        },
       });
     } catch (error) {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
@@ -63,6 +90,7 @@ export class AlternatifController {
     }
   }
 
+  @ApiBearerAuth([ERole.ADM, ERole.SPA])
   @ApiStandartResponse(ResponseAlternatifDTO)
   @Get('/:alternatif_id')
   async findOne(
@@ -85,6 +113,7 @@ export class AlternatifController {
     }
   }
 
+  @ApiBearerAuth([ERole.ADM])
   @Patch('/:alternatif_id')
   async update(
     @Param('alternatif_id') alternatif_id: number,
@@ -107,6 +136,7 @@ export class AlternatifController {
     }
   }
 
+  @ApiBearerAuth([ERole.ADM])
   @ApiStandartResponseDeleted(deleteResponseDto)
   @Delete('/:alternatif_id')
   async delete(

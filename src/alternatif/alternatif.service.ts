@@ -24,9 +24,16 @@ export class AlternatifService {
     }
   }
 
-  async findAll() {
+  async countAlternatif() {
+    return this.prisma.alternatif.count();
+  }
+
+  async findAlternatif(skip: number, take: number) {
     try {
-      const alternatif = await this.prisma.alternatif.findMany();
+      const alternatif = await this.prisma.alternatif.findMany({
+        skip,
+        take,
+      });
 
       return {
         alternatif,

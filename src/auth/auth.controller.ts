@@ -33,7 +33,7 @@ export class AuthController {
       });
 
       if (!users) {
-        res.status(HttpStatus.BAD_REQUEST).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           status: 400,
           message: 'Username Tidak Terdaftar',
         });
@@ -47,7 +47,7 @@ export class AuthController {
         const check = await this.CheckPassword(dto.password, users?.password);
 
         if (!check) {
-          res.status(HttpStatus.BAD_REQUEST).json({
+          return res.status(HttpStatus.BAD_REQUEST).json({
             status: 400,
             message: 'Password Salah',
           });
@@ -60,14 +60,14 @@ export class AuthController {
           token = tokenCreate;
         }
       }
-      res.status(HttpStatus.OK).json({
+      return res.status(HttpStatus.OK).json({
         status: 200,
         message: 'ok',
         data: { token, users },
       });
     } catch (error) {
       console.log(error);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: 500,
         message: 'Internal Server Error',
       });
