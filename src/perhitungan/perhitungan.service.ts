@@ -107,7 +107,29 @@ export class PerhitunganService {
           0,
         );
 
-        let peringkat = await prisma.hasil_perhitungan.findMany({
+        // Cari data berdasarkan alternatif_id untuk melihat apakah data sudah ada
+        const existingData = await prisma.hasil_perhitungan.findUnique({
+          where: { alternatif_id: dataToUpsert[0].alternatif_id },
+        });
+
+        // Jika data ada, update total_skor, jika tidak ada, tambahkan data baru
+        if (existingData) {
+          await prisma.hasil_perhitungan.update({
+            where: { id: existingData.id },
+            data: { total_skor: totalSkor },
+          });
+        } else {
+          await prisma.hasil_perhitungan.create({
+            data: {
+              alternatif_id: dataToUpsert[0].alternatif_id,
+              total_skor: totalSkor,
+              ranking: 0, // Ranking akan dihitung ulang di langkah berikutnya
+            },
+          });
+        }
+
+        // Ambil semua data untuk menghitung ulang ranking
+        const peringkat = await prisma.hasil_perhitungan.findMany({
           orderBy: { total_skor: 'desc' },
           select: {
             id: true,
@@ -116,80 +138,11 @@ export class PerhitunganService {
           },
         });
 
-        if (peringkat.length === 0) {
-          console.log('Tabel kosong, memasukkan data baru.');
-          await prisma.hasil_perhitungan.create({
-            data: {
-              alternatif_id: dataToUpsert[0].alternatif_id,
-              total_skor: totalSkor,
-              ranking: 1,
-            },
-          });
-
-          peringkat = await prisma.hasil_perhitungan.findMany({
-            orderBy: { total_skor: 'desc' },
-            select: {
-              id: true,
-              alternatif_id: true,
-              total_skor: true,
-            },
-          });
-        } else {
-          const existingData = peringkat.find(
-            (p) => p.alternatif_id === dataToUpsert[0].alternatif_id,
-          );
-
-          if (existingData) {
-            await prisma.hasil_perhitungan.update({
-              where: { id: existingData.id },
-              data: {
-                total_skor: totalSkor,
-                ranking:
-                  peringkat.findIndex((p) => p.id === existingData.id) + 1,
-              },
-            });
-          } else {
-            await prisma.hasil_perhitungan.create({
-              data: {
-                alternatif_id: dataToUpsert[0].alternatif_id,
-                total_skor: totalSkor,
-                ranking: 1,
-              },
-            });
-
-            peringkat = await prisma.hasil_perhitungan.findMany({
-              orderBy: { total_skor: 'desc' },
-              select: {
-                id: true,
-                alternatif_id: true,
-                total_skor: true,
-              },
-            });
-          }
-        }
-
-        peringkat.sort((a, b) => {
-          const skorA = a.total_skor ? a.total_skor.toNumber() : 0;
-          const skorB = b.total_skor ? b.total_skor.toNumber() : 0;
-          return skorB - skorA;
-        });
-
+        // Hitung ulang ranking berdasarkan total_skor
         for (const [index, alt] of peringkat.entries()) {
-          // console.log('Upserting data:', {
-          //   id: alt.id,
-          //   alternatif_id: alt.alternatif_id,
-          //   total_skor: alt.total_skor,
-          //   ranking: index + 1,
-          // });
-
           await prisma.hasil_perhitungan.update({
-            where: {
-              id: alt.id,
-            },
-            data: {
-              total_skor: alt.total_skor,
-              ranking: index + 1,
-            },
+            where: { id: alt.id },
+            data: { ranking: index + 1 }, // Ranking dimulai dari 1
           });
         }
 

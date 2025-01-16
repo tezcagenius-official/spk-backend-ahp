@@ -38,13 +38,13 @@ export class AuthGuard implements CanActivate {
         process.env.JWT_SECRET_KEY || '',
       ) as UserPayload;
 
-      console.log(decoded);
+      // console.log(decoded);
 
       if (this.roles && !this.roles.includes(decoded.role)) {
         throw new UnauthorizedException('token salah');
       }
 
-      console.log(decoded.role);
+      // console.log(decoded.role);
 
       request['user'] = decoded;
       return true;

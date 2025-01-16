@@ -16,7 +16,7 @@ model users {
 
 model hasil_perhitungan {
   id            Int         @id @default(autoincrement())
-  alternatif_id Int?
+  alternatif_id Int?        @unique
   total_skor    Decimal?    @default(0) @db.Decimal(10, 4)
   ranking       Int?
   alternatif    alternatif? @relation(fields: [alternatif_id], references: [alternatif_id], onDelete: NoAction, onUpdate: NoAction, map: "hasil_perhitungan_ibfk_1")
