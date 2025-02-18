@@ -170,6 +170,17 @@ export class SubKriteriaController {
   @Delete('/:id')
   async delete(@Param('id') id: number, @Res() res: Response) {
     try {
+      const hasil = await this.prisma.hasil_perhitungan.deleteMany();
+
+      const penilaian = await this.prisma.penilaian_alternatif.deleteMany();
+
+      const perbandinganSub =
+        await this.prisma.perbandingan_sub_kriteria.deleteMany({
+          where: {
+            OR: [{ sub_kriteria1_id: id }, { sub_kriteria2_id: id }],
+          },
+        });
+
       const deleteSubKriteria = await this.prisma.sub_kriteria.delete({
         where: {
           sub_kriteria_id: id,

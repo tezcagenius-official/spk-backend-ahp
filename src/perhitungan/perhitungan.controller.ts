@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -12,11 +13,12 @@ import {
 import { PerhitunganService } from './perhitungan.service';
 import { Response } from 'express';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreatePenilaianAlternatifDto } from './dto/penilaian_alternatif.dto';
 import {
   ApiStandartResponse,
   ApiStandartResponseArray,
+  ApiStandartResponseDeleted,
 } from 'src/schema_standart/flexibelSchema';
 import { GetAlternatifByIdResponseDto } from './dto/response_get_alternatif_byID.dto';
 import { UpsertPenilaianAlternatifDto } from './dto/upsert_penilaian.dto';
@@ -26,6 +28,7 @@ import { createPagination } from 'src/common/interface/pagination.util';
 import { env } from 'process';
 import { ApiBearerAuth } from 'src/common/decorator/bearer_auth';
 import { ERole } from 'src/common/enum/ERole';
+import { deleteResponseDto } from 'src/auth/dto/response-crud.dto';
 
 @ApiTags('Perhitungan')
 @Controller('/api/perhitungan')
@@ -117,6 +120,55 @@ export class PerhitunganController {
     } catch (error) {
       console.log(error);
 
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Internal Server Error',
+      });
+    }
+  }
+
+  @ApiBearerAuth([ERole.ADM])
+  @ApiStandartResponseDeleted(deleteResponseDto)
+  @Delete('/:alternatif_id')
+  async deletePerhitungan(
+    @Param('alternatif_id') alternatif_id: number,
+    @Res() res: Response,
+  ) {
+    try {
+      const destroy =
+        await this.perhitunganService.deletePerhitungan(alternatif_id);
+
+      return res.status(HttpStatus.OK).json({
+        status: HttpStatus.OK,
+        message: destroy.message,
+        data: {},
+      });
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Internal Server Error',
+      });
+    }
+  }
+
+  @ApiBearerAuth([ERole.ADM])
+  @ApiStandartResponseDeleted(deleteResponseDto)
+  @ApiOperation({
+    summary: 'Truncate Data',
+    description: 'Menghapus semua data di tabel perhitungan dan penilaian',
+  })
+  @Delete()
+  async truncatePerhitungan(@Res() res: Response) {
+    try {
+      const destroy = await this.perhitunganService.truncatePerhitungan();
+
+      return res.status(HttpStatus.OK).json({
+        status: HttpStatus.OK,
+        message: destroy.message,
+        data: {},
+      });
+    } catch (error) {
+      console.log(error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Internal Server Error',

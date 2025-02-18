@@ -168,9 +168,34 @@ export class CriteriaController {
   @Delete('/:id')
   async delete(@Param('id') id: number, @Res() res: Response) {
     try {
+      const hasil = await this.prisma.hasil_perhitungan.deleteMany();
+
+      const penilaian = await this.prisma.penilaian_alternatif.deleteMany();
+
+      const perbandinganSub =
+        await this.prisma.perbandingan_sub_kriteria.deleteMany({
+          where: {
+            kriteria_id: id,
+          },
+        });
+
+      const Sub = await this.prisma.sub_kriteria.deleteMany({
+        where: {
+          kriteria_id: id,
+        },
+      });
+
+      const perbandingan = await this.prisma.perbandingan_kriteria.deleteMany();
+
       const deleteKriteria = await this.prisma.kriteria.delete({
         where: {
           kriteria_id: id,
+        },
+      });
+
+      const update = await this.prisma.kriteria.updateMany({
+        data: {
+          prioritas: null,
         },
       });
 

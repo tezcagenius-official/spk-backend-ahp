@@ -222,6 +222,27 @@ export class PerbandinganSubKriteriaService {
       konsisten: CR !== null && CR < 0.1, // Jika < 0.1 maka konsisten
     };
   }
+
+  async getSubKriteriaPerbandingan(kriteria_id: number) {
+    try {
+      const sub = await this.prisma.sub_kriteria.findMany({
+        where: {
+          kriteria_id,
+        },
+        select: {
+          kriteria_id: true,
+          nama_sub_kriteria: true,
+        },
+      });
+
+      return {
+        sub,
+        message: 'sub Kriteria Berhasil Diambil',
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 // nilai RI

@@ -15,6 +15,7 @@ import { Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
 import {
   ApiStandartResponse,
+  ApiStandartResponseArray,
   ApiStandartResponseCreate,
 } from 'src/schema_standart/flexibelSchema';
 import { createResponseDto } from 'src/auth/dto/response-crud.dto';
@@ -22,6 +23,7 @@ import { CalculateSubKriteriaAHPResponseDto } from './dto/response_perbandingan_
 import { PerbandinganSubKriteriaDto } from './dto/get_perbandingan_sub_kriteria.dto';
 import { ApiBearerAuth } from 'src/common/decorator/bearer_auth';
 import { ERole } from 'src/common/enum/ERole';
+import { SubKriteriaResponseDto } from './dto/response_get_sub_kriteria_perbandingan.dto';
 
 @ApiTags('Perbandingan Sub Kriteria')
 @Controller('/api/perbandingan-sub')
@@ -109,6 +111,33 @@ export class PerbandinganSubKriteriaController {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Terjadi kesalahan saat menghitung Sub-Kriteria',
+        error: error.message,
+      });
+    }
+  }
+
+  @ApiBearerAuth([ERole.ADM, ERole.SPA])
+  @ApiStandartResponseArray(SubKriteriaResponseDto)
+  @Get('display-sub/:kriteria_id')
+  async getSubKriteriaPerbandingan(
+    @Param('kriteria_id', ParseIntPipe) kriteria_id: number,
+    @Res() res: Response,
+  ) {
+    try {
+      const sub =
+        await this.perbandinganSubKriteriaService.getSubKriteriaPerbandingan(
+          kriteria_id,
+        );
+
+      return res.status(HttpStatus.OK).json({
+        status: HttpStatus.OK,
+        message: sub.message,
+        data: sub.sub,
+      });
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Terjadi kesalahan saat mengambil Sub-Kriteria',
         error: error.message,
       });
     }

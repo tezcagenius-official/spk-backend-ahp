@@ -213,4 +213,61 @@ export class PerhitunganService {
       throw error;
     }
   }
+
+  async deletePerhitungan(alternatif_id: number) {
+    try {
+      const deletePerhitungan = await this.prisma.hasil_perhitungan.delete({
+        where: {
+          alternatif_id,
+        },
+      });
+
+      const deletePenilaian = await this.prisma.penilaian_alternatif.deleteMany(
+        {
+          where: {
+            alternatif_id,
+          },
+        },
+      );
+
+      const peringkat = await this.prisma.hasil_perhitungan.findMany({
+        orderBy: { total_skor: 'desc' },
+        select: {
+          id: true,
+          alternatif_id: true,
+          total_skor: true,
+        },
+      });
+
+      // Hitung ulang ranking berdasarkan total_skor
+      for (const [index, alt] of peringkat.entries()) {
+        await this.prisma.hasil_perhitungan.update({
+          where: { id: alt.id },
+          data: { ranking: index + 1 }, // Ranking dimulai dari 1
+        });
+      }
+
+      return {
+        message: 'Berhasil Menghapus Perhitungan Alternatif',
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async truncatePerhitungan() {
+    try {
+      const deletePerhitungan =
+        await this.prisma.hasil_perhitungan.deleteMany();
+
+      const deletePenilaian =
+        await this.prisma.penilaian_alternatif.deleteMany();
+
+      return {
+        message: 'Berhasil Menghapus Semua Perhitungan Alternatif',
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 }
