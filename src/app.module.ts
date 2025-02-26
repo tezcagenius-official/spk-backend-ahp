@@ -10,9 +10,10 @@ import { PerbandinganKriteriaModule } from './perbandingan_kriteria/perbandingan
 import { PerbandinganSubKriteriaModule } from './perbandingan_sub_kriteria/perbandingan_sub_kriteria.module';
 import { AlternatifModule } from './alternatif/alternatif.module';
 import { UsersModule } from './users/users.module';
+import { ReportModule } from './report/report.module';
 
 @Module({
-  imports: [AuthModule, CriteriaModule, PenilaianModule, PerhitunganModule, SubKriteriaModule, PerbandinganKriteriaModule, PerbandinganSubKriteriaModule, AlternatifModule, UsersModule],
+  imports: [AuthModule, CriteriaModule, PenilaianModule, PerhitunganModule, SubKriteriaModule, PerbandinganKriteriaModule, PerbandinganSubKriteriaModule, AlternatifModule, UsersModule, ReportModule],
   controllers: [AppController],
   providers: [AppService],
 })
