@@ -136,14 +136,18 @@ export class PerbandinganKriteriaService {
     );
 
     return {
-      matriks,
-      matriksNormalisasi,
-      prioritas,
-      eigenMax,
-      CI,
-      RI,
-      CR,
-      konsisten: CR !== null && CR < 0.1, // jika < 0.1 maka konsisten
+      matriks: matriks.map((row) =>
+        row.map((value) => parseFloat(value.toFixed(3))),
+      ),
+      matriksNormalisasi: matriksNormalisasi.map((row) =>
+        row.map((value) => parseFloat(value.toFixed(3))),
+      ),
+      prioritas: prioritas.map((value) => parseFloat(value.toFixed(3))),
+      eigenMax: parseFloat(eigenMax.toFixed(3)),
+      CI: parseFloat(CI.toFixed(3)),
+      RI: parseFloat(RI.toFixed(3)),
+      CR: parseFloat(CR.toFixed(3)),
+      konsisten: CR !== null && CR < 0.1, // Jika < 0.1 maka konsisten
     };
   }
 }

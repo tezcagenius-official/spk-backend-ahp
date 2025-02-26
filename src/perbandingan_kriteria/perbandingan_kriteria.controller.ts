@@ -72,6 +72,8 @@ export class PerbandinganKriteriaController {
     try {
       const result = await this.perbandinganKriteriaService.calculateAHP();
 
+      console.log(result);
+
       return res.status(HttpStatus.OK).json({
         status: HttpStatus.OK,
         message: 'Perbandingan Kriteria',

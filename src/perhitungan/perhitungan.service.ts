@@ -199,7 +199,7 @@ export class PerhitunganService {
           sub_kriteria: penilaian.sub_kriteria?.nama_sub_kriteria,
           nilai: penilaian.nilai_sub_kriteria,
         })),
-        total_skor: item.total_skor,
+        total_skor: parseFloat(item.total_skor.toFixed(3)),
         ranking: item.ranking,
       }));
 
