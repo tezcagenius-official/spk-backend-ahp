@@ -169,6 +169,7 @@ export class PerhitunganService {
         select: {
           alternatif: {
             select: {
+              alternatif_id: true,
               nama: true,
               email: true,
               nomor_telpon: true,
@@ -193,6 +194,7 @@ export class PerhitunganService {
       });
 
       const filteredResult = result.map((item) => ({
+        alternatif_id: item.alternatif.alternatif_id,
         nama: item.alternatif.nama,
         email: item.alternatif.email,
         nomor_telpon: item.alternatif.nomor_telpon,
