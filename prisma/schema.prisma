@@ -17,11 +17,13 @@ model users {
 model hasil_perhitungan {
   id            Int         @id @default(autoincrement())
   alternatif_id Int?        @unique
-  total_skor    Decimal?    @default(0) @db.Decimal(10, 4)
+  total_skor    Decimal?    @default(0.0000) @db.Decimal(10, 4)
   ranking       Int?
+  divisi_id     Int?
+  divisi        divisi?     @relation(fields: [divisi_id], references: [divisi_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hasil_perhitungan_divisi")
   alternatif    alternatif? @relation(fields: [alternatif_id], references: [alternatif_id], onDelete: NoAction, onUpdate: NoAction, map: "hasil_perhitungan_ibfk_1")
 
-  @@index([alternatif_id], map: "alternatif_id")
+  @@index([divisi_id], map: "fk_hasil_perhitungan_divisi")
 }
 
 model alternatif {
@@ -29,8 +31,12 @@ model alternatif {
   nama                 String                 @db.VarChar(100)
   email                String?                @db.VarChar(100)
   nomor_telpon         String?                @db.VarChar(20)
-  hasil_perhitungan    hasil_perhitungan[]
+  divisi_id            Int?
+  divisi               divisi?                @relation(fields: [divisi_id], references: [divisi_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_alternatif_divisi")
+  hasil_perhitungan    hasil_perhitungan?
   penilaian_alternatif penilaian_alternatif[]
+
+  @@index([divisi_id], map: "fk_alternatif_divisi")
 }
 
 model kriteria {
@@ -50,6 +56,8 @@ model penilaian_alternatif {
   sub_kriteria_id    Int?
   nilai_sub_kriteria Decimal?      @db.Decimal(10, 4)
   kriteria_id        Int?
+  divisi_id          Int?
+  divisi             divisi?       @relation(fields: [divisi_id], references: [divisi_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_penilaian_alternatif_divisi")
   kriteria           kriteria?     @relation(fields: [kriteria_id], references: [kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_penilaian_alternatif_kriteria")
   alternatif         alternatif?   @relation(fields: [alternatif_id], references: [alternatif_id], onDelete: NoAction, onUpdate: NoAction, map: "penilaian_alternatif_ibfk_1")
   sub_kriteria       sub_kriteria? @relation(fields: [sub_kriteria_id], references: [sub_kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "penilaian_alternatif_ibfk_2")
@@ -58,6 +66,7 @@ model penilaian_alternatif {
   @@index([alternatif_id], map: "alternatif_id")
   @@index([sub_kriteria_id], map: "sub_kriteria_id")
   @@index([kriteria_id], map: "fk_penilaian_alternatif_kriteria")
+  @@index([divisi_id], map: "fk_penilaian_alternatif_divisi")
 }
 
 model perbandingan_kriteria {
@@ -99,6 +108,14 @@ model sub_kriteria {
   kriteria                                                                           kriteria?                   @relation(fields: [kriteria_id], references: [kriteria_id], onDelete: NoAction, onUpdate: NoAction, map: "sub_kriteria_ibfk_1")
 
   @@index([kriteria_id], map: "kriteria_id")
+}
+
+model divisi {
+  divisi_id            Int                    @id @default(autoincrement())
+  nama_divisi          String                 @unique(map: "nama_divisi") @db.VarChar(100)
+  alternatif           alternatif[]
+  hasil_perhitungan    hasil_perhitungan[]
+  penilaian_alternatif penilaian_alternatif[]
 }
 
 enum users_role {

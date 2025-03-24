@@ -26,6 +26,11 @@ export class UpsertPenilaianAlternatifDto {
   @IsNotEmpty()
   alternatif_id: number;
 
+  @ApiProperty({ description: 'Divisi Id', example: 1 })
+  @IsInt()
+  @IsNotEmpty()
+  divisi_id: number;
+
   @ApiProperty({
     description: 'Array dari penilaian kriteria dan sub-kriteria',
     type: [PenilaianDto],

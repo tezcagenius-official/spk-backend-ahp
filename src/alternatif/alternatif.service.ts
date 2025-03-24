@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateAlternatifDTO } from './dto/create_alternatif.dto';
+import { EditAlternatifDTO } from './dto/edit_alternatif.dto';
 
 @Injectable()
 export class AlternatifService {
@@ -13,6 +14,7 @@ export class AlternatifService {
           nama: data.nama,
           email: data.email,
           nomor_telpon: data.nomor_telpon,
+          divisi_id: data.divisi_id,
         },
       });
 
@@ -28,16 +30,44 @@ export class AlternatifService {
     return this.prisma.alternatif.count();
   }
 
-  async findAlternatif(skip: number, take: number) {
+  async findAlternatif(skip: number, take: number, divisi_id?: number) {
     try {
+      const whereCondition = divisi_id ? { divisi_id } : {};
+
       const alternatif = await this.prisma.alternatif.findMany({
+        where: {
+          divisi: whereCondition, // 🔹 Filter berdasarkan divisi jika ada
+        },
+        select: {
+          alternatif_id: true,
+          nama: true,
+          email: true,
+          nomor_telpon: true,
+          divisi: {
+            select: {
+              divisi_id: true,
+              nama_divisi: true,
+            },
+          },
+        },
         skip,
         take,
       });
 
+      const result = alternatif.map((item) => ({
+        alternatif_id: item.alternatif_id,
+        nama: item.nama,
+        email: item.email,
+        nomor_telpon: item.nomor_telpon,
+        divisi_id: item.divisi.divisi_id,
+        nama_divisi: item.divisi.nama_divisi,
+      }));
+
       return {
-        alternatif,
-        message: 'Berhasil Mengambil Data Alternatif',
+        result,
+        message: alternatif.length
+          ? 'Berhasil Mengambil Data Alternatif'
+          : 'Data belum ada',
       };
     } catch (error) {
       throw error;
@@ -50,10 +80,31 @@ export class AlternatifService {
         where: {
           alternatif_id: alternatif_id,
         },
+        select: {
+          alternatif_id: true,
+          nama: true,
+          email: true,
+          nomor_telpon: true,
+          divisi: {
+            select: {
+              divisi_id: true,
+              nama_divisi: true,
+            },
+          },
+        },
       });
 
+      const result = {
+        alternatif_id: alternatif.alternatif_id,
+        nama: alternatif.nama,
+        email: alternatif.email,
+        nomor_telpon: alternatif.nomor_telpon,
+        divisi_id: alternatif.divisi.divisi_id,
+        nama_divisi: alternatif.divisi.nama_divisi,
+      };
+
       return {
-        alternatif,
+        result,
         message: 'Berhasil Mengambil Data Alternatif',
       };
     } catch (error) {
@@ -61,7 +112,7 @@ export class AlternatifService {
     }
   }
 
-  async update(alternatif_id: number, data: CreateAlternatifDTO) {
+  async update(alternatif_id: number, data: EditAlternatifDTO) {
     try {
       const update = await this.prisma.alternatif.update({
         where: {

@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsNotEmpty, IsString } from 'class-validator';
 
-export class CreateAlternatifDTO {
+export class EditAlternatifDTO {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
@@ -16,9 +16,4 @@ export class CreateAlternatifDTO {
   @IsNotEmpty()
   @ApiProperty()
   nomor_telpon: string;
-
-  @IsInt()
-  @IsNotEmpty()
-  @ApiProperty({ example: 2 })
-  divisi_id: number;
 }

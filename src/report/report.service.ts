@@ -8,9 +8,18 @@ import * as PdfPrinter from 'pdfmake';
 export class ReportService {
   constructor(private prisma: PrismaService) {}
 
-  async exportToExcel(res: Response) {
+  async exportToExcel(res: Response, divisi_id: number) {
     try {
+      const divisi = await this.prisma.divisi.findFirst({
+        where: {
+          divisi_id: divisi_id,
+        },
+      });
+
       const result = await this.prisma.hasil_perhitungan.findMany({
+        where: {
+          divisi_id: divisi_id,
+        },
         select: {
           alternatif: {
             select: {
@@ -24,6 +33,11 @@ export class ReportService {
                   kriteria: true,
                 },
               },
+              divisi: {
+                select: {
+                  nama_divisi: true,
+                },
+              },
             },
           },
           id: true,
@@ -35,10 +49,15 @@ export class ReportService {
         },
       });
 
+      if (result.length === 0) {
+        return res.status(404).json({ message: 'Belum Ada Penilaian' });
+      }
+
       const filteredResult = result.map((item) => ({
         nama: item.alternatif.nama,
         email: item.alternatif.email,
         nomor_telpon: item.alternatif.nomor_telpon,
+        nama_divisi: item.alternatif.divisi.nama_divisi,
         nilai: item.alternatif.penilaian_alternatif.map((penilaian) => ({
           kriteria: penilaian.kriteria?.nama_kriteria,
           sub_kriteria: penilaian.sub_kriteria?.nama_sub_kriteria,
@@ -103,7 +122,7 @@ export class ReportService {
       );
       res.setHeader(
         'Content-Disposition',
-        'attachment; filename="Hasil Penilaian.xlsx"',
+        `attachment; filename="Hasil Penilaian Divisi ${divisi.nama_divisi}.xlsx"`,
       );
 
       await workbook.xlsx.write(res);

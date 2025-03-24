@@ -9,9 +9,10 @@ import {
   Post,
   Query,
   Res,
+  ValidationPipe,
 } from '@nestjs/common';
 import { AlternatifService } from './alternatif.service';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CreateAlternatifDTO } from './dto/create_alternatif.dto';
 import { Response } from 'express';
 import {
@@ -19,13 +20,17 @@ import {
   ApiStandartResponseArray,
   ApiStandartResponseDeleted,
 } from 'src/schema_standart/flexibelSchema';
-import { ResponseAlternatifDTO } from './dto/response_alternatif.dto';
+import {
+  AlternatifFilterDto,
+  ResponseAlternatifDTO,
+} from './dto/response_alternatif.dto';
 import { deleteResponseDto } from 'src/auth/dto/response-crud.dto';
 import { ApiBearerAuth } from 'src/common/decorator/bearer_auth';
 import { ERole } from 'src/common/enum/ERole';
 import { createPagination } from 'src/common/interface/pagination.util';
 import { paginationDekoratorDto } from 'src/common/interface/paginationDekorator';
 import { env } from 'process';
+import { EditAlternatifDTO } from './dto/edit_alternatif.dto';
 
 @ApiTags('Alternatif')
 @Controller('/api/alternatif')
@@ -54,7 +59,10 @@ export class AlternatifController {
   @ApiBearerAuth([ERole.ADM, ERole.SPA])
   @ApiStandartResponseArray(ResponseAlternatifDTO)
   @Get()
-  async findAll(@Query() filter: paginationDekoratorDto, @Res() res: Response) {
+  async findAll(
+    @Res() res: Response,
+    @Query(new ValidationPipe({ transform: true })) filter: AlternatifFilterDto,
+  ) {
     try {
       const totalCount = await this.alternatifService.countAlternatif();
       const { page, perPage, skip, meta } = createPagination(
@@ -65,12 +73,13 @@ export class AlternatifController {
       const alternatif = await this.alternatifService.findAlternatif(
         skip,
         perPage,
+        filter.divisi_id,
       );
 
       return res.status(HttpStatus.OK).json({
         status: HttpStatus.OK,
         message: alternatif.message,
-        data: alternatif.alternatif,
+        data: alternatif.result,
         meta: {
           ...meta,
           prev:
@@ -84,6 +93,8 @@ export class AlternatifController {
         },
       });
     } catch (error) {
+      console.log(error);
+
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Internal Server Error',
@@ -104,7 +115,7 @@ export class AlternatifController {
       return res.status(HttpStatus.OK).json({
         status: HttpStatus.OK,
         message: result.message,
-        data: result.alternatif,
+        data: result.result,
       });
     } catch (error) {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
@@ -118,7 +129,7 @@ export class AlternatifController {
   @Patch('/:alternatif_id')
   async update(
     @Param('alternatif_id') alternatif_id: number,
-    @Body() dto: CreateAlternatifDTO,
+    @Body() dto: EditAlternatifDTO,
     @Res() res: Response,
   ) {
     try {

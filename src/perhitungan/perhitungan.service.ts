@@ -8,6 +8,40 @@ import { Response } from 'express';
 export class PerhitunganService {
   constructor(private prisma: PrismaService) {}
 
+  async getAlternatifByDivisi(divisi_id: number) {
+    try {
+      const alternatif = await this.prisma.alternatif.findMany({
+        where: { divisi_id: divisi_id },
+        select: {
+          alternatif_id: true,
+          nama: true,
+        },
+      });
+
+      const result = alternatif.map((item) => {
+        return {
+          alternatif_id: item.alternatif_id,
+          nama: item.nama,
+          divisi_id: divisi_id,
+        };
+      });
+
+      if (!alternatif) {
+        return {
+          message: 'Alternatif Belum Ada',
+          data: {},
+        };
+      }
+
+      return {
+        message: 'Alternatif Berhasil Diambil',
+        result,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getAlternatifById(alternatif_id: number) {
     try {
       const alternatif = await this.prisma.alternatif.findUnique({
@@ -38,10 +72,11 @@ export class PerhitunganService {
 
   async upsertPenilaianAlternatif(payload: {
     alternatif_id: number;
+    divisi_id: number;
     penilaian: { kriteria_id: number; sub_kriteria_id: number }[];
   }) {
     try {
-      const { alternatif_id, penilaian } = payload;
+      const { alternatif_id, divisi_id, penilaian } = payload;
 
       return this.prisma.$transaction(async (prisma) => {
         const sub_kriteria_ids = penilaian.map((p) => p.sub_kriteria_id);
@@ -79,6 +114,7 @@ export class PerhitunganService {
 
           dataToUpsert.push({
             alternatif_id: alternatif_id,
+            divisi_id,
             kriteria_id: p.kriteria_id,
             sub_kriteria_id: p.sub_kriteria_id,
             nilai_sub_kriteria,
@@ -97,6 +133,7 @@ export class PerhitunganService {
             },
             create: {
               alternatif_id: alternatif_id,
+              divisi_id,
               kriteria_id: p.kriteria_id,
               sub_kriteria_id: p.sub_kriteria_id,
               nilai_sub_kriteria,
@@ -124,6 +161,7 @@ export class PerhitunganService {
           await prisma.hasil_perhitungan.create({
             data: {
               alternatif_id: dataToUpsert[0].alternatif_id,
+              divisi_id,
               total_skor: totalSkor,
               ranking: 0, // Ranking akan dihitung ulang di langkah berikutnya
             },
@@ -132,6 +170,7 @@ export class PerhitunganService {
 
         // Ambil semua data untuk menghitung ulang ranking
         const peringkat = await prisma.hasil_perhitungan.findMany({
+          where: { divisi_id },
           orderBy: { total_skor: 'desc' },
           select: {
             id: true,
@@ -144,7 +183,7 @@ export class PerhitunganService {
         for (const [index, alt] of peringkat.entries()) {
           await prisma.hasil_perhitungan.update({
             where: { id: alt.id },
-            data: { ranking: index + 1 }, // Ranking dimulai dari 1
+            data: { ranking: index + 1 },
           });
         }
 
@@ -159,13 +198,20 @@ export class PerhitunganService {
     }
   }
 
-  async countAlternatif() {
-    return this.prisma.hasil_perhitungan.count();
+  async countAlternatif(divisi_id: number) {
+    return this.prisma.hasil_perhitungan.count({
+      where: {
+        divisi_id: divisi_id,
+      },
+    });
   }
 
-  async hasilPerhitungan(skip: number, take: number) {
+  async hasilPerhitungan(skip: number, take: number, divisi_id: number) {
     try {
       const result = await this.prisma.hasil_perhitungan.findMany({
+        where: {
+          divisi_id: divisi_id,
+        },
         select: {
           alternatif: {
             select: {
@@ -178,6 +224,11 @@ export class PerhitunganService {
                   nilai_sub_kriteria: true,
                   sub_kriteria: true,
                   kriteria: true,
+                },
+              },
+              divisi: {
+                select: {
+                  nama_divisi: true,
                 },
               },
             },
@@ -198,6 +249,7 @@ export class PerhitunganService {
         nama: item.alternatif.nama,
         email: item.alternatif.email,
         nomor_telpon: item.alternatif.nomor_telpon,
+        nama_divisi: item.alternatif.divisi.nama_divisi,
         nilai: item.alternatif.penilaian_alternatif.map((penilaian) => ({
           kriteria: penilaian.kriteria?.nama_kriteria,
           sub_kriteria: penilaian.sub_kriteria?.nama_sub_kriteria,
@@ -220,6 +272,17 @@ export class PerhitunganService {
 
   async deletePerhitungan(alternatif_id: number) {
     try {
+      const alternatif = await this.prisma.hasil_perhitungan.findFirst({
+        where: { alternatif_id },
+        select: { divisi_id: true },
+      });
+
+      if (!alternatif) {
+        throw new Error('Data tidak ditemukan');
+      }
+
+      const divisi_id = alternatif.divisi_id;
+
       const deletePerhitungan = await this.prisma.hasil_perhitungan.delete({
         where: {
           alternatif_id,
@@ -235,6 +298,7 @@ export class PerhitunganService {
       );
 
       const peringkat = await this.prisma.hasil_perhitungan.findMany({
+        where: { divisi_id },
         orderBy: { total_skor: 'desc' },
         select: {
           id: true,
@@ -247,28 +311,12 @@ export class PerhitunganService {
       for (const [index, alt] of peringkat.entries()) {
         await this.prisma.hasil_perhitungan.update({
           where: { id: alt.id },
-          data: { ranking: index + 1 }, // Ranking dimulai dari 1
+          data: { ranking: index + 1 },
         });
       }
 
       return {
         message: 'Berhasil Menghapus Perhitungan Alternatif',
-      };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async truncatePerhitungan() {
-    try {
-      const deletePerhitungan =
-        await this.prisma.hasil_perhitungan.deleteMany();
-
-      const deletePenilaian =
-        await this.prisma.penilaian_alternatif.deleteMany();
-
-      return {
-        message: 'Berhasil Menghapus Semua Perhitungan Alternatif',
       };
     } catch (error) {
       throw error;

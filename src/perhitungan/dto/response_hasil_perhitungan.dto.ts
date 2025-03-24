@@ -1,4 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional } from 'class-validator';
+import { paginationDekoratorDto } from 'src/common/interface/paginationDekorator';
 
 class NilaiDto {
   @ApiProperty({
@@ -40,6 +43,12 @@ export class HasilPerhitunganResponseDto {
   nomor_telpon: string;
 
   @ApiProperty({
+    description: 'Nama Divisi',
+    example: 'Supervisor',
+  })
+  nama_divisi: string;
+
+  @ApiProperty({
     description: 'Nilai yang didapatkan berdasarkan kriteria dan sub kriteria',
     type: [NilaiDto],
   })
@@ -56,4 +65,14 @@ export class HasilPerhitunganResponseDto {
     example: 1,
   })
   ranking: number;
+}
+
+export class RankingFilterDto extends paginationDekoratorDto {
+  @ApiProperty({
+    type: Number,
+    description: 'divisi_id',
+  })
+  @Type(() => Number)
+  @IsInt()
+  divisi_id?: number;
 }

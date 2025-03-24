@@ -58,6 +58,10 @@ class AlternatifDto {
   @ApiProperty({ example: '083567654526' })
   @IsString()
   nomor_telpon: string;
+
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  divisi_id: number;
 }
 
 export class GetAlternatifByIdResponseDto {
