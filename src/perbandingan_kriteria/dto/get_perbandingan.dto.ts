@@ -20,6 +20,9 @@ class PerbandingankriteriaResultDto {
 }
 
 export class PerbandinganKriteriaDto {
+  @ApiProperty({ example: 1 })
+  divisi_id: number;
+
   @ApiProperty({ type: [PerbandingankriteriaResultDto] })
   @IsArray()
   @ValidateNested({ each: true })

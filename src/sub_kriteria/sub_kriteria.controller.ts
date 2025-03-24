@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   Res,
+  ValidationPipe,
 } from '@nestjs/common';
 import { SubKriteriaService } from './sub_kriteria.service';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -27,7 +28,10 @@ import {
   updateResponseDto,
 } from 'src/auth/dto/response-crud.dto';
 import { createSubKriteriaDto } from './dto/create_sub_kriteria';
-import { getResponseSubCriteriaDto } from './dto/get_response_sub_kriteria';
+import {
+  getResponseSubCriteriaDto,
+  SubKriteriaFilterDto,
+} from './dto/get_response_sub_kriteria';
 import { updateSubKriteriaDto } from './dto/update_sub_kriteria';
 import { ApiBearerAuth } from 'src/common/decorator/bearer_auth';
 import { ERole } from 'src/common/enum/ERole';
@@ -70,9 +74,17 @@ export class SubKriteriaController {
   @ApiBearerAuth([ERole.ADM, ERole.SPA])
   @ApiStandartResponseArray(getResponseSubCriteriaDto)
   @Get()
-  async findAll(@Query() filter: paginationDekoratorDto, @Res() res: Response) {
+  async findAll(
+    @Query(new ValidationPipe({ transform: true }))
+    filter: SubKriteriaFilterDto,
+    @Res() res: Response,
+  ) {
     try {
-      const totalCount = await this.prisma.sub_kriteria.count();
+      const totalCount = await this.prisma.sub_kriteria.count({
+        where: {
+          ...(filter.kriteria_id ? { kriteria_id: filter.kriteria_id } : {}),
+        },
+      });
 
       const { page, perPage, skip, meta } = createPagination(
         filter,
@@ -80,13 +92,18 @@ export class SubKriteriaController {
       );
 
       const subKriteria = await this.prisma.sub_kriteria.findMany({
+        where: {
+          ...(filter.kriteria_id ? { kriteria_id: filter.kriteria_id } : {}),
+        },
         skip,
         take: perPage,
       });
 
       return res.status(HttpStatus.OK).json({
         status: HttpStatus.OK,
-        message: 'Sub Kriteria Berhasil Diambil',
+        message: subKriteria.length
+          ? 'Berhasil Mengambil Data Sub Kriteria'
+          : 'Data belum ada',
         data: subKriteria,
         meta: {
           ...meta,

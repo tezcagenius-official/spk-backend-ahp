@@ -44,6 +44,7 @@ import { GetAlternatifByDivisiDto } from './dto/response_get_alternatif_by_divis
 export class PerhitunganController {
   constructor(private readonly perhitunganService: PerhitunganService) {}
 
+  @ApiBearerAuth([ERole.ADM, ERole.SPA])
   @ApiStandartResponseArray(GetAlternatifByDivisiDto)
   @Get('by-divisi/:divisi_id')
   async getAlternatifByDivisi(
@@ -108,6 +109,8 @@ export class PerhitunganController {
         data: {},
       });
     } catch (error) {
+      console.log(error);
+
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Internal Server Error',

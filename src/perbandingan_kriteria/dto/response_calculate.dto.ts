@@ -1,4 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsInt } from 'class-validator';
 
 export class CalculateAHPResponseDto {
   @ApiProperty({
@@ -56,4 +58,14 @@ export class CalculateAHPResponseDto {
     example: true,
   })
   konsisten: boolean;
+}
+
+export class PerbandinganKriteriaFilterDto {
+  @ApiProperty({
+    type: Number,
+    description: 'divisi_id',
+  })
+  @Type(() => Number)
+  @IsInt()
+  divisi_id?: number;
 }

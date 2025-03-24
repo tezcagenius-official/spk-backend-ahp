@@ -43,11 +43,15 @@ model kriteria {
   kriteria_id                                                        Int                         @id @default(autoincrement())
   nama_kriteria                                                      String                      @db.VarChar(100)
   prioritas                                                          Decimal?                    @db.Decimal(10, 4)
+  divisi_id                                                          Int?
+  divisi                                                             divisi?                     @relation(fields: [divisi_id], references: [divisi_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_kriteria_divisi")
   penilaian_alternatif                                               penilaian_alternatif[]
   perbandingan_kriteria_perbandingan_kriteria_kriteria1_idTokriteria perbandingan_kriteria[]     @relation("perbandingan_kriteria_kriteria1_idTokriteria")
   perbandingan_kriteria_perbandingan_kriteria_kriteria2_idTokriteria perbandingan_kriteria[]     @relation("perbandingan_kriteria_kriteria2_idTokriteria")
   perbandingan_sub_kriteria                                          perbandingan_sub_kriteria[]
   sub_kriteria                                                       sub_kriteria[]
+
+  @@index([divisi_id], map: "fk_kriteria_divisi")
 }
 
 model penilaian_alternatif {
@@ -115,6 +119,7 @@ model divisi {
   nama_divisi          String                 @unique(map: "nama_divisi") @db.VarChar(100)
   alternatif           alternatif[]
   hasil_perhitungan    hasil_perhitungan[]
+  kriteria             kriteria[]
   penilaian_alternatif penilaian_alternatif[]
 }
 

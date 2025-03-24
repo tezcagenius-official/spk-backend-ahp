@@ -26,6 +26,11 @@ class PerbandinganDto {
 }
 
 export class CreatePerbandinganDto {
+  @IsInt()
+  @IsNotEmpty()
+  @ApiProperty({ example: 1, description: 'divisi_id' })
+  divisi_id: number;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PerbandinganDto)

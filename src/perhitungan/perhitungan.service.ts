@@ -49,10 +49,11 @@ export class PerhitunganService {
       });
 
       if (!alternatif) {
-        throw new Error('Alternatif tidak ditemukan.');
+        return { message: 'Alternatif tidak ditemukan.' };
       }
 
       const kriteria = await this.prisma.kriteria.findMany({
+        where: { divisi_id: alternatif.divisi_id },
         include: {
           sub_kriteria: true,
         },
@@ -261,7 +262,9 @@ export class PerhitunganService {
 
       return {
         filteredResult,
-        message: 'Berhasil Mengambil Hasil Perhitungan',
+        message: filteredResult.length
+          ? 'Berhasil Mengambil Hasil Penilaian'
+          : 'Data belum ada',
       };
     } catch (error) {
       console.log(error);

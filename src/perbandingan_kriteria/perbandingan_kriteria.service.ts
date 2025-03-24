@@ -7,8 +7,30 @@ import { Decimal } from '@prisma/client/runtime/library';
 export class PerbandinganKriteriaService {
   constructor(private prisma: PrismaService) {}
 
-  async getPerbandinganKriteria() {
-    const kriteria = await this.prisma.kriteria.findMany();
+  async getPerbandinganKriteria(divisi_id: number) {
+    const divisi = await this.prisma.divisi.findFirst({
+      where: {
+        divisi_id: divisi_id,
+      },
+    });
+
+    if (!divisi) {
+      return {
+        message: `Divisi Tidak Ditemukan`,
+      };
+    }
+
+    const kriteria = await this.prisma.kriteria.findMany({
+      where: {
+        divisi_id: divisi_id,
+      },
+    });
+
+    if (kriteria.length === 0) {
+      return {
+        message: `Belum Ada Kriteria Pada Divisi ${divisi.nama_divisi}`,
+      };
+    }
 
     const combinations = [];
     for (let i = 0; i < kriteria.length; i++) {
@@ -21,21 +43,38 @@ export class PerbandinganKriteriaService {
       }
     }
 
-    return { perbandingan: combinations };
+    return {
+      data: {
+        divisi_id: divisi.divisi_id,
+        perbandingan: combinations,
+      },
+      message: `Perbandingan kriteria Divisi ${divisi.nama_divisi}`,
+    };
   }
 
-  async createPerbandingan(dto: CreatePerbandinganDto) {
+  async createPerbandingan(dto: CreatePerbandinganDto, divisi_id: number) {
     const { perbandingan } = dto;
 
-    const uniqueKriteriaIds = Array.from(
-      new Set([
-        ...perbandingan.map((item) => item.kriteria1_id),
-        ...perbandingan.map((item) => item.kriteria2_id),
-      ]),
+    const kriteriaInDivisi = await this.prisma.kriteria.findMany({
+      where: { divisi_id },
+      select: { kriteria_id: true },
+    });
+
+    const kriteriaIds = new Set(kriteriaInDivisi.map((k) => k.kriteria_id));
+
+    const filteredPerbandingan = perbandingan.filter(
+      (item) =>
+        kriteriaIds.has(item.kriteria1_id) &&
+        kriteriaIds.has(item.kriteria2_id),
     );
 
+    if (filteredPerbandingan.length === 0) {
+      return { message: `Tidak ada kriteria yang valid untuk divisi ini.` };
+    }
+
+    const uniqueKriteriaIds = Array.from(kriteriaIds);
     uniqueKriteriaIds.forEach((kriteriaId) => {
-      perbandingan.push({
+      filteredPerbandingan.push({
         kriteria1_id: kriteriaId,
         kriteria2_id: kriteriaId,
         nilai_perbandingan: 1,
@@ -43,7 +82,7 @@ export class PerbandinganKriteriaService {
     });
 
     await Promise.all(
-      perbandingan.map(
+      filteredPerbandingan.map(
         async ({ kriteria1_id, kriteria2_id, nilai_perbandingan }) => {
           await this.prisma.perbandingan_kriteria.upsert({
             where: {
@@ -70,14 +109,44 @@ export class PerbandinganKriteriaService {
         },
       ),
     );
+
+    return {
+      message: `Perbandingan kriteria untuk divisi ${divisi_id} berhasil disimpan.`,
+    };
   }
 
-  async calculateAHP() {
-    const kriteria = await this.prisma.kriteria.findMany();
+  async calculateAHP(divisi_id: number) {
+    //  kriteria by divisi_id
+    const kriteria = await this.prisma.kriteria.findMany({
+      where: { divisi_id },
+    });
     const jumlahKriteria = kriteria.length;
 
-    const perbandingan = await this.prisma.perbandingan_kriteria.findMany();
+    if (jumlahKriteria === 0) {
+      return {
+        message: 'Tidak ada kriteria untuk divisi ini.',
+        matriks: [],
+        matriksNormalisasi: [],
+        prioritas: [],
+        eigenMax: 0,
+        CI: 0,
+        RI: 0,
+        CR: 0,
+        konsisten: false,
+      };
+    }
 
+    // perbandingan by divisi_id
+    const kriteriaIds = kriteria.map((k) => k.kriteria_id);
+
+    const perbandingan = await this.prisma.perbandingan_kriteria.findMany({
+      where: {
+        kriteria1_id: { in: kriteriaIds },
+        kriteria2_id: { in: kriteriaIds },
+      },
+    });
+
+    // Inisialisasi matriks perbandingan
     const matriks: number[][] = Array.from({ length: jumlahKriteria }, (_, i) =>
       Array.from({ length: jumlahKriteria }, (_, j) => (i === j ? 1 : 0)),
     );
@@ -86,23 +155,26 @@ export class PerbandinganKriteriaService {
       const i = kriteria.findIndex((k) => k.kriteria_id === p.kriteria1_id);
       const j = kriteria.findIndex((k) => k.kriteria_id === p.kriteria2_id);
 
-      const nilaiPerbandingan = (p.nilai_perbandingan as Decimal).toNumber();
-
-      matriks[i][j] = nilaiPerbandingan;
-      matriks[j][i] = 1 / nilaiPerbandingan; // Perbandingan terbalik
+      if (i !== -1 && j !== -1) {
+        const nilaiPerbandingan = (p.nilai_perbandingan as Decimal).toNumber();
+        matriks[i][j] = nilaiPerbandingan;
+        matriks[j][i] = 1 / nilaiPerbandingan;
+      }
     });
 
+    // Hitung total kolom
     const totalKolom = matriks[0].map((_, colIndex) =>
       matriks.reduce((sum, row) => sum + row[colIndex], 0),
     );
 
+    // Normalisasi matriks
     const matriksNormalisasi = matriks.map((row) =>
       row.map((value, colIndex) =>
         totalKolom[colIndex] === 0 ? 0 : value / totalKolom[colIndex],
       ),
     );
 
-    // prioritas
+    // Hitung prioritas
     const prioritas = matriksNormalisasi.map(
       (row) => row.reduce((sum, value) => sum + value, 0) / jumlahKriteria,
     );
@@ -116,16 +188,14 @@ export class PerbandinganKriteriaService {
       };
     }
 
-    // eigen
+    // Hitung nilai eigen
     const eigenValues = totalKolom.map((total, i) => prioritas[i] * total);
     const eigenMax = eigenValues.reduce((sum, value) => sum + value, 0);
 
-    // CI, RI, dan CR
     const CI = (eigenMax - jumlahKriteria) / (jumlahKriteria - 1);
     const RI = getRI(jumlahKriteria);
     const CR = RI === 0 ? null : CI / RI;
 
-    // Update atau simpan nilai prioritas ke tabel `kriteria`
     await Promise.all(
       kriteria.map((k, index) =>
         this.prisma.kriteria.update({

@@ -1,4 +1,13 @@
-import { Body, Controller, Get, HttpStatus, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Post,
+  Query,
+  Res,
+  ValidationPipe,
+} from '@nestjs/common';
 import { PerbandinganKriteriaService } from './perbandingan_kriteria.service';
 import { CreatePerbandinganDto } from './dto/create_perbandingan_dto';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -8,10 +17,14 @@ import {
 } from 'src/schema_standart/flexibelSchema';
 import { createResponseDto } from 'src/auth/dto/response-crud.dto';
 import { Response } from 'express';
-import { CalculateAHPResponseDto } from './dto/response_calculate.dto';
+import {
+  CalculateAHPResponseDto,
+  PerbandinganKriteriaFilterDto,
+} from './dto/response_calculate.dto';
 import { PerbandinganKriteriaDto } from './dto/get_perbandingan.dto';
 import { ApiBearerAuth } from 'src/common/decorator/bearer_auth';
 import { ERole } from 'src/common/enum/ERole';
+import { FilterPerbandinganKriteriaDto } from './dto/filter_perbandingan_kriteria.dto';
 
 @ApiTags('Perbandingan Kriteria')
 @Controller('/api/perbandingan-kriteria')
@@ -23,15 +36,21 @@ export class PerbandinganKriteriaController {
   @ApiBearerAuth([ERole.ADM])
   @ApiStandartResponse(PerbandinganKriteriaDto)
   @Get('/perbandingan')
-  async getPerbandinganKriteria(@Res() res: Response) {
+  async getPerbandinganKriteria(
+    @Query(new ValidationPipe({ transform: true }))
+    filter: FilterPerbandinganKriteriaDto,
+    @Res() res: Response,
+  ) {
     try {
       const result =
-        await this.perbandinganKriteriaService.getPerbandinganKriteria();
+        await this.perbandinganKriteriaService.getPerbandinganKriteria(
+          filter.divisi_id,
+        );
 
       return res.status(HttpStatus.OK).json({
         status: HttpStatus.OK,
-        message: 'Perbandingan kriteria',
-        data: result,
+        message: result.message,
+        data: result.data,
       });
     } catch (error) {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
@@ -49,12 +68,21 @@ export class PerbandinganKriteriaController {
     @Res() res: Response,
   ) {
     try {
-      const result =
-        await this.perbandinganKriteriaService.createPerbandingan(dto);
+      if (!dto.divisi_id) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          status: HttpStatus.BAD_REQUEST,
+          message: 'divisi_id diperlukan untuk membuat perbandingan',
+        });
+      }
+
+      const result = await this.perbandinganKriteriaService.createPerbandingan(
+        dto,
+        dto.divisi_id,
+      );
 
       return res.status(HttpStatus.CREATED).json({
         status: HttpStatus.CREATED,
-        message: 'Berhasil Menyimpan Perbandingan',
+        message: result.message,
         data: {},
       });
     } catch (error) {
@@ -68,11 +96,24 @@ export class PerbandinganKriteriaController {
   @ApiBearerAuth([ERole.ADM, ERole.SPA])
   @ApiStandartResponse(CalculateAHPResponseDto)
   @Get('/calculate')
-  async calculateAHP(@Res() res: Response) {
+  async calculateAHP(
+    @Query(new ValidationPipe({ transform: true }))
+    filter: PerbandinganKriteriaFilterDto,
+    @Res() res: Response,
+  ) {
     try {
-      const result = await this.perbandinganKriteriaService.calculateAHP();
+      if (!filter.divisi_id) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          status: HttpStatus.BAD_REQUEST,
+          message: 'divisi_id diperlukan',
+        });
+      }
 
-      console.log(result);
+      const result = await this.perbandinganKriteriaService.calculateAHP(
+        filter.divisi_id,
+      );
+
+      // console.log(result);
 
       return res.status(HttpStatus.OK).json({
         status: HttpStatus.OK,

@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   Res,
+  ValidationPipe,
 } from '@nestjs/common';
 import { CriteriaService } from './criteria.service';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -21,7 +22,10 @@ import {
   ApiStandartResponseDeleted,
   ApiStandartResponseUpdated,
 } from 'src/schema_standart/flexibelSchema';
-import { getResponseCriteriaDto } from './dto/get_response_criteria.dto';
+import {
+  getResponseCriteriaDto,
+  KriteriaFilterDto,
+} from './dto/get_response_criteria.dto';
 import { createCriteriaDto } from './dto/create_criteria.dto';
 import {
   createResponseDto,
@@ -33,6 +37,7 @@ import { ERole } from 'src/common/enum/ERole';
 import { paginationDekoratorDto } from 'src/common/interface/paginationDekorator';
 import { createPagination } from 'src/common/interface/pagination.util';
 import { env } from 'process';
+import { updateCriteriaDto } from './dto/edit_criteria.dto';
 
 @ApiTags('Kriteria')
 @Controller('/api/criteria')
@@ -50,6 +55,7 @@ export class CriteriaController {
       const create = await this.prisma.kriteria.create({
         data: {
           nama_kriteria: dto.nama_kriteria,
+          divisi_id: dto.divisi_id,
         },
       });
 
@@ -68,9 +74,16 @@ export class CriteriaController {
   @ApiBearerAuth([ERole.ADM, ERole.SPA])
   @ApiStandartResponseArray(getResponseCriteriaDto)
   @Get()
-  async findAll(@Query() filter: paginationDekoratorDto, @Res() res: Response) {
+  async findAll(
+    @Query(new ValidationPipe({ transform: true })) filter: KriteriaFilterDto,
+    @Res() res: Response,
+  ) {
     try {
-      const totalCount = await this.prisma.kriteria.count();
+      const totalCount = await this.prisma.kriteria.count({
+        where: {
+          ...(filter.divisi_id ? { divisi_id: filter.divisi_id } : {}),
+        },
+      });
 
       const { page, perPage, skip, meta } = createPagination(
         filter,
@@ -78,14 +91,36 @@ export class CriteriaController {
       );
 
       const kriteria = await this.prisma.kriteria.findMany({
+        where: {
+          ...(filter.divisi_id ? { divisi_id: filter.divisi_id } : {}),
+        },
+        include: {
+          divisi: {
+            select: {
+              nama_divisi: true,
+            },
+          },
+        },
         skip,
         take: perPage,
       });
 
+      const result = kriteria.map((item) => {
+        return {
+          kriteria_id: item.kriteria_id,
+          nama_kriteria: item.nama_kriteria,
+          prioritas: item.prioritas,
+          divisi_id: item.divisi_id,
+          nama_divisi: item.divisi.nama_divisi,
+        };
+      });
+
       return res.status(HttpStatus.OK).json({
         status: HttpStatus.OK,
-        message: 'Kriteria Berhasil Diambil',
-        data: kriteria,
+        message: kriteria.length
+          ? 'Berhasil Mengambil Data Kriteria'
+          : 'Data belum ada',
+        data: result,
         meta: {
           ...meta,
           prev:
@@ -116,12 +151,27 @@ export class CriteriaController {
         where: {
           kriteria_id: id,
         },
+        include: {
+          divisi: {
+            select: {
+              nama_divisi: true,
+            },
+          },
+        },
       });
+
+      const result = {
+        kriteria_id: kriteria.kriteria_id,
+        nama_kriteria: kriteria.nama_kriteria,
+        prioritas: kriteria.prioritas,
+        divisi_id: kriteria.divisi_id,
+        nama_divisi: kriteria.divisi.nama_divisi,
+      };
 
       return res.status(HttpStatus.OK).json({
         status: 200,
         message: 'Kriteria Berhasil Diambil',
-        data: kriteria,
+        data: result,
       });
     } catch (error) {
       console.log(error);
@@ -137,7 +187,7 @@ export class CriteriaController {
   @Patch('/:id')
   async update(
     @Param('id') id: number,
-    @Body() dto: createCriteriaDto,
+    @Body() dto: updateCriteriaDto,
     @Res() res: Response,
   ) {
     try {

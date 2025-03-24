@@ -33,6 +33,10 @@ class KriteriaDto {
   @IsNumber()
   prioritas: number;
 
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  divisi_id: number;
+
   @ApiProperty({
     type: [SubKriteriaDto],
   })
