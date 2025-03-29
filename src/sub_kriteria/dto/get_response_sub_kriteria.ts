@@ -10,8 +10,14 @@ export class getResponseSubCriteriaDto {
   @ApiProperty({ example: 1 })
   kriteria_id: number;
 
-  @ApiProperty({ example: 'Sangat Bail' })
+  @ApiProperty({ example: 'Pengalaman' })
+  nama_kriteria: string;
+
+  @ApiProperty({ example: 'Sangat Baik' })
   nama_sub_kriteria: string;
+
+  @ApiProperty({ example: 0.123 })
+  prioritas: number;
 }
 
 export class SubKriteriaFilterDto extends paginationDekoratorDto {

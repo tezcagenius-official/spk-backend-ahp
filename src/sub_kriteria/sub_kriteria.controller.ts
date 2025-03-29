@@ -95,8 +95,25 @@ export class SubKriteriaController {
         where: {
           ...(filter.kriteria_id ? { kriteria_id: filter.kriteria_id } : {}),
         },
+        include: {
+          kriteria: {
+            select: {
+              nama_kriteria: true,
+            },
+          },
+        },
         skip,
         take: perPage,
+      });
+
+      const result = subKriteria.map((item) => {
+        return {
+          sub_kriteria_id: item.sub_kriteria_id,
+          kriteria_id: item.kriteria_id,
+          nama_kriteria: item.kriteria.nama_kriteria,
+          nama_sub_kriteria: item.nama_sub_kriteria,
+          prioritas: item.prioritas,
+        };
       });
 
       return res.status(HttpStatus.OK).json({
@@ -104,7 +121,7 @@ export class SubKriteriaController {
         message: subKriteria.length
           ? 'Berhasil Mengambil Data Sub Kriteria'
           : 'Data belum ada',
-        data: subKriteria,
+        data: result,
         meta: {
           ...meta,
           prev:
@@ -131,16 +148,31 @@ export class SubKriteriaController {
   @Get('/:id')
   async findOne(@Param('id') id: number, @Res() res: Response) {
     try {
-      const kriteria = await this.prisma.sub_kriteria.findFirst({
+      const subKriteria = await this.prisma.sub_kriteria.findFirst({
         where: {
           sub_kriteria_id: id,
         },
+        include: {
+          kriteria: {
+            select: {
+              nama_kriteria: true,
+            },
+          },
+        },
       });
+
+      const result = {
+        sub_kriteria_id: subKriteria.sub_kriteria_id,
+        kriteria_id: subKriteria.kriteria_id,
+        nama_kriteria: subKriteria.kriteria.nama_kriteria,
+        nama_sub_kriteria: subKriteria.nama_sub_kriteria,
+        prioritas: subKriteria.prioritas,
+      };
 
       return res.status(HttpStatus.OK).json({
         status: 200,
         message: 'Sub Kriteria Berhasil Diambil',
-        data: kriteria,
+        data: result,
       });
     } catch (error) {
       console.log(error);
