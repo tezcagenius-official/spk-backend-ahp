@@ -216,7 +216,7 @@ export class PerbandinganKriteriaService {
       eigenMax: parseFloat(eigenMax.toFixed(3)),
       CI: parseFloat(CI.toFixed(3)),
       RI: parseFloat(RI.toFixed(3)),
-      CR: parseFloat(CR.toFixed(3)),
+      CR: (CR && parseFloat(CR.toFixed(3))) || CR,
       konsisten: CR !== null && CR < 0.1, // Jika < 0.1 maka konsisten
     };
   }
